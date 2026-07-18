@@ -1,0 +1,59 @@
+Option 2 — use a second Supabase client for the leaderboard only.
+
+External project (Discord bot writes here):
+- URL: https://yruqauzaixumpezccvra.supabase.co
+- Anon/publishable key: [PASTE YOUR ANON KEY HERE]
+
+Do NOT use the service role key in the frontend. Keep Lovable Cloud as the default backend for everything else; only the invite pages use the external client.
+
+Schema already exists on that project:
+
+Table: invite_links
+- id (uuid)
+- invite_code (text)
+- url (text)
+- uses (integer)
+- max_uses (integer, nullable)
+- temporary (boolean)
+- inviter_id (text, nullable)
+- inviter_username (text, nullable)
+- inviter_tag (text, nullable)
+- guild_id (text)
+- guild_name (text)
+- channel_id (text, nullable)
+- channel_name (text, nullable)
+- invite_created_at (timestamptz, nullable)
+- expires_at (timestamptz, nullable)
+- scanned_at (timestamptz)
+
+View: invite_leaderboard
+- Same columns as invite_links
+- One row per inviter per guild (best link by uses)
+- RLS: public SELECT allowed on both table and view
+
+Build:
+
+1) Invite Leaderboard page (/)
+   - Query invite_leaderboard via the external Supabase client
+   - Dropdown filter by guild_name (+ "All servers")
+   - Sort by uses DESC, show top 10 per filter
+   - Columns: rank, inviter_tag, uses, guild_name, clickable url
+   - Dark Discord theme (#5865F2 accent)
+   - Footer: latest scanned_at as "Last updated"
+   - Empty state: "Waiting for bot sync..."
+   - Refetch every 5 minutes; loading + error states
+
+2) All Invite Links page (/links) — optional
+   - Query invite_links via external client
+   - Search/filter by inviter_tag or guild_name
+   - Show url, uses, guild_name, scanned_at
+
+Implementation notes:
+- Create something like src/integrations/supabase/inviteClient.ts with createClient(externalUrl, externalAnonKey)
+- Store URL + anon key in env vars if possible (VITE_* or Lovable secrets), not hardcoded in git if avoidable
+- Example query:
+
+  supabase.from('invite_leaderboard').select('*').order('uses', { ascending: false })
+
+  When a guild is selected:
+  .eq('guild_name', selectedGuild).order('uses', { ascending: false }).limit(10)

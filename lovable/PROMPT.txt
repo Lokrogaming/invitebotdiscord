@@ -1,0 +1,12 @@
+Use Option 2: a separate Supabase client for invite data only.
+
+Lovable Cloud stays the default backend. The Discord bot writes to an external Supabase project; the leaderboard pages read from it with the anon key.
+
+External Supabase:
+- URL: https://yruqauzaixumpezccvra.supabase.co
+- Anon key: (user provides from Supabase Dashboard → Settings → API)
+
+Read from view `invite_leaderboard` (primary) and table `invite_links` (optional second page).
+See lovable/REPLY.txt for full schema and UI spec.
+
+Do not migrate the bot to Lovable Cloud. Do not use service_role in the client.
