@@ -1,27 +1,7 @@
-const { createClient } = require('@supabase/supabase-js');
 const { PermissionFlagsBits } = require('discord.js');
+const { createSupabaseClient, getSupabaseConfig } = require('./lib/supabase');
 
 const INSERT_CHUNK_SIZE = 500;
-
-function getSupabaseConfig() {
-  if (process.env.SUPABASE_ENABLED !== 'true') {
-    return null;
-  }
-
-  const url = process.env.SUPABASE_URL?.trim();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  const table = process.env.SUPABASE_TABLE?.trim() || 'invite_links';
-  const placeholderKeys = new Set(['your_service_role_key_here', 'your-service-role-key']);
-
-  if (!url || !key || placeholderKeys.has(key)) {
-    console.warn(
-      '[Supabase] SUPABASE_ENABLED=true but SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing. Sync disabled.',
-    );
-    return null;
-  }
-
-  return { url, key, table };
-}
 
 async function collectInviteRows(discordClient) {
   const rows = [];
@@ -46,6 +26,7 @@ async function collectInviteRows(discordClient) {
           inviter_id: invite.inviter?.id ?? null,
           inviter_username: invite.inviter?.username ?? null,
           inviter_tag: invite.inviter?.tag ?? null,
+          inviter_avatar_url: invite.inviter?.displayAvatarURL({ size: 128 }) ?? null,
           guild_id: guild.id,
           guild_name: guild.name,
           channel_id: invite.channelId ?? invite.channel?.id ?? null,
@@ -101,10 +82,7 @@ function startSupabaseSync(discordClient) {
     return;
   }
 
-  const supabase = createClient(config.url, config.key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
+  const supabase = createSupabaseClient(config);
   const intervalMinutes = Number.parseInt(process.env.SUPABASE_SCAN_INTERVAL_MINUTES || '30', 10);
   const intervalMs = Math.max(1, intervalMinutes) * 60 * 1000;
   let syncInProgress = false;

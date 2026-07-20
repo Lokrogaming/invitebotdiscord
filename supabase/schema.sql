@@ -11,6 +11,7 @@ create table if not exists public.invite_links (
   inviter_id text,
   inviter_username text,
   inviter_tag text,
+  inviter_avatar_url text,
   guild_id text not null,
   guild_name text not null,
   channel_id text,
@@ -20,16 +21,45 @@ create table if not exists public.invite_links (
   scanned_at timestamptz not null default now()
 );
 
+create table if not exists public.member_joins (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  username text,
+  user_tag text,
+  avatar_url text,
+  guild_id text not null,
+  guild_name text not null,
+  join_method text not null default 'unknown',
+  invite_code text,
+  invite_url text,
+  inviter_id text,
+  inviter_username text,
+  inviter_tag text,
+  inviter_avatar_url text,
+  joined_at timestamptz,
+  tracked_at timestamptz not null default now(),
+  unique (user_id, guild_id)
+);
+
 create index if not exists invite_links_guild_id_idx on public.invite_links (guild_id);
 create index if not exists invite_links_inviter_id_idx on public.invite_links (inviter_id);
 create index if not exists invite_links_uses_idx on public.invite_links (uses desc);
 create index if not exists invite_links_scanned_at_idx on public.invite_links (scanned_at desc);
+create index if not exists member_joins_guild_id_idx on public.member_joins (guild_id);
+create index if not exists member_joins_user_id_idx on public.member_joins (user_id);
 
 alter table public.invite_links enable row level security;
+alter table public.member_joins enable row level security;
 
 drop policy if exists "Public read access for invite_links" on public.invite_links;
 create policy "Public read access for invite_links"
   on public.invite_links
+  for select
+  using (true);
+
+drop policy if exists "Public read access for member_joins" on public.member_joins;
+create policy "Public read access for member_joins"
+  on public.member_joins
   for select
   using (true);
 
@@ -45,6 +75,8 @@ select distinct on (guild_id, inviter_id)
   inviter_id,
   inviter_username,
   inviter_tag,
+  inviter_avatar_url,
+  inviter_avatar_url as avatar_url,
   guild_id,
   guild_name,
   channel_id,
@@ -57,6 +89,7 @@ where inviter_id is not null
 order by guild_id, inviter_id, uses desc, invite_code;
 
 grant select on public.invite_links to anon, authenticated;
+grant select on public.member_joins to anon, authenticated;
 grant select on public.invite_leaderboard to anon, authenticated;
 
 -- The bot uses SUPABASE_SERVICE_ROLE_KEY, which bypasses RLS for writes.

@@ -11,6 +11,8 @@ select distinct on (guild_id, inviter_id)
   inviter_id,
   inviter_username,
   inviter_tag,
+  inviter_avatar_url,
+  inviter_avatar_url as avatar_url,
   guild_id,
   guild_name,
   channel_id,

@@ -28,7 +28,7 @@ async function main() {
 
   const { data: sample, error: sampleError } = await supabase
     .from('invite_leaderboard')
-    .select('guild_name, inviter_tag, uses, url')
+    .select('guild_name, inviter_tag, inviter_avatar_url, avatar_url, uses, url')
     .order('uses', { ascending: false })
     .limit(3);
 
