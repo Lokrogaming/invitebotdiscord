@@ -47,6 +47,37 @@ async function collectInviteRows(discordClient) {
   return rows;
 }
 
+function stripInviterAvatarUrl(rows) {
+  return rows.map(({ inviter_avatar_url, ...row }) => row);
+}
+
+async function insertInviteRows(supabase, table, rows) {
+  let includeAvatarUrl = true;
+
+  for (let index = 0; index < rows.length; index += INSERT_CHUNK_SIZE) {
+    const chunk = rows.slice(index, index + INSERT_CHUNK_SIZE);
+    const payload = includeAvatarUrl ? chunk : stripInviterAvatarUrl(chunk);
+    const { error: insertError } = await supabase.from(table).insert(payload);
+
+    if (
+      insertError &&
+      includeAvatarUrl &&
+      insertError.message.includes('inviter_avatar_url')
+    ) {
+      console.warn(
+        '[Supabase] inviter_avatar_url column missing. Retrying without avatars — run: npm run migrate',
+      );
+      includeAvatarUrl = false;
+      index -= INSERT_CHUNK_SIZE;
+      continue;
+    }
+
+    if (insertError) {
+      throw insertError;
+    }
+  }
+}
+
 async function syncInvitesToSupabase(discordClient, config, supabase) {
   const rows = await collectInviteRows(discordClient);
 
@@ -64,13 +95,7 @@ async function syncInvitesToSupabase(discordClient, config, supabase) {
     return;
   }
 
-  for (let index = 0; index < rows.length; index += INSERT_CHUNK_SIZE) {
-    const chunk = rows.slice(index, index + INSERT_CHUNK_SIZE);
-    const { error: insertError } = await supabase.from(config.table).insert(chunk);
-    if (insertError) {
-      throw insertError;
-    }
-  }
+  await insertInviteRows(supabase, config.table, rows);
 
   console.log(`[Supabase] Sync complete. Wrote ${rows.length} row(s).`);
 }
