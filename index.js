@@ -93,7 +93,7 @@ function updatePresence() {
     currentPresence = 0;
   }
 }
-client.once('ready', async () => {
+client.once('clientReady', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   // Systeme starten
