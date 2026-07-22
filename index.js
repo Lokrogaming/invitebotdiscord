@@ -93,41 +93,27 @@ function updatePresence() {
     currentPresence = 0;
   }
 }
-client.once('clientReady', async () => {
+client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
-  // Systeme starten
-  await initializeInviteCaches(client);
-  startJoinTracker(client);
-  startSupabaseSync(client);
 
+  // Status + erste Presence
+  updatePresence();
 
-  // Status setzen
-  client.user.setPresence({
-    status: BOT_CONFIG.status,
-    activities: [
-      {
-        name: "Starting...",
-        type: ActivityType.Playing
-      }
-    ]
-  });
-
-
-  // kurz warten, damit Supabase den ersten Sync machen kann
-  setTimeout(() => {
+  setInterval(() => {
     updatePresence();
-
-    setInterval(updatePresence, 5 * 60 * 1000);
-  }, 5000);
-
-
-  console.log("Presence gesetzt.");
+  }, 5 * 60 * 1000);
 
 
   // Commands registrieren
   await client.application.commands.set(commands);
   console.log(`Registered ${commands.length} slash command(s).`);
+
+
+  // Systeme starten
+  await initializeInviteCaches(client);
+  startJoinTracker(client);
+  startSupabaseSync(client);
 });
 
 
