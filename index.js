@@ -67,7 +67,7 @@ const PRESENCES = [
     type: ActivityType.Playing
   },
   {
-    text: () => "Join our official server https://https://discord.gg/cMNg8B4cQN",
+    text: () => "Join our official server https://discord.gg/cMNg8B4cQN",
     type: ActivityType.Playing
   }
 ];
@@ -77,12 +77,15 @@ let currentPresence = 0;
 function updatePresence() {
   const presence = PRESENCES[currentPresence];
 
-  client.user.setActivity(
-    presence.text(),
-    {
-      type: presence.type
-    }
-  );
+  client.user.setPresence({
+    status: BOT_CONFIG.status,
+    activities: [
+      {
+        name: presence.text(),
+        type: presence.type
+      }
+    ]
+  });
 
   currentPresence++;
 
@@ -93,14 +96,31 @@ function updatePresence() {
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
+  // Systeme starten
+  await initializeInviteCaches(client);
+  startJoinTracker(client);
+  startSupabaseSync(client);
 
-  // Presence setzen
-   // Direkt beim Start setzen
-   updatePresence();
 
-   // Alle 5 Minuten wechseln
-   setInterval(updatePresence, 5 * 60 * 1000);
- 
+  // Status setzen
+  client.user.setPresence({
+    status: BOT_CONFIG.status,
+    activities: [
+      {
+        name: "Starting...",
+        type: ActivityType.Playing
+      }
+    ]
+  });
+
+
+  // kurz warten, damit Supabase den ersten Sync machen kann
+  setTimeout(() => {
+    updatePresence();
+
+    setInterval(updatePresence, 5 * 60 * 1000);
+  }, 5000);
+
 
   console.log("Presence gesetzt.");
 
@@ -108,12 +128,6 @@ client.once('ready', async () => {
   // Commands registrieren
   await client.application.commands.set(commands);
   console.log(`Registered ${commands.length} slash command(s).`);
-
-
-  // Systeme starten
-  await initializeInviteCaches(client);
-  startJoinTracker(client);
-  startSupabaseSync(client);
 });
 
 
