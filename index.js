@@ -51,7 +51,7 @@ const client = new Client({
 // ===========================
 // READY
 // ===========================
-const { ActivityType } = require('discord.js');
+
 
 const PRESENCES = [
   {
