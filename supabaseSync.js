@@ -1,6 +1,8 @@
 const { PermissionFlagsBits } = require('discord.js');
 const { createSupabaseClient, getSupabaseConfig } = require('./lib/supabase');
 
+let inviteCount = 0;
+
 const INSERT_CHUNK_SIZE = 500;
 
 async function collectInviteRows(discordClient) {
@@ -80,6 +82,7 @@ async function insertInviteRows(supabase, table, rows) {
 
 async function syncInvitesToSupabase(discordClient, config, supabase) {
   const rows = await collectInviteRows(discordClient);
+  inviteCount = rows.length;
 
   console.log(
     `[Supabase] Collected ${rows.length} invite link(s) across ${discordClient.guilds.cache.size} server(s).`,
@@ -133,4 +136,7 @@ function startSupabaseSync(discordClient) {
   console.log(`[Supabase] Sync enabled. Running on startup and every ${intervalMinutes} minute(s).`);
 }
 
-module.exports = { startSupabaseSync };
+module.exports = { 
+  startSupabaseSync,
+  getInviteCount: () => inviteCount
+};
